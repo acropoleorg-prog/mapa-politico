@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mapa Político — Rio de Janeiro</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --navy: #0D1520;
+  --navy-mid: #131E2E;
+  --navy-light: #1A2940;
+  --gold: #C9A84C;
+  --gold-soft: rgba(201,168,76,0.12);
+  --gold-dim: rgba(201,168,76,0.06);
+  --cream: #F0EDE6;
+  --cream-soft: rgba(240,237,230,0.7);
+  --cream-dim: rgba(240,237,230,0.4);
+  --green: #4ADE80;
+  --blue: #60A5FA;
+  --gray: #94A3B8;
+  --orange: #FB923C;
+  --purple: #A78BFA;
+  --border: rgba(201,168,76,0.1);
+  --red: #F87171;
+}
+
+body { font-family: 'DM Sans', sans-serif; background: var(--navy); color: var(--cream); height: 100vh; overflow: hidden; }
+
+/* ── LOGIN ── */
+#login-screen {
+  position: fixed; inset: 0; z-index: 9999;
+  background: var(--navy);
+  display: flex; align-items: center; justify-content: center;
+}
+
+.login-card {
+  width: 360px;
+  padding: 40px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--navy-mid);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+  text-align: center;
+}
+
+.login-card .gold-bar { width: 32px; height: 2px; background: var(--gold); margin: 0 auto 16px; border-radius: 1px; }
+.login-card h1 { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+.login-card .sub { font-size: 11px; color: var(--gold); text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 28px; }
+
+.login-input {
+  width: 100%; padding: 12px 16px;
+  background: var(--navy-light); border: 1px solid var(--border); border-radius: 8px;
+  color: var(--cream); font-family: 'DM Sans', sans-serif; font-size: 14px;
+  outline: none; transition: border-color 0.2s; margin-bottom: 12px;
+  text-align: center; letter-spacing: 3px;
+}
+.login-input:focus { border-color: var(--gold); }
+.login-input.error { border-color: var(--red); }
+
+.login-btn {
+  width: 100%; padding: 12px;
+  background: var(--gold); color: var(--navy); border: none; border-radius: 8px;
+  font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1.5px; cursor: pointer;
+  transition: opacity 0.2s;
+}
+.login-btn:hover { opacity: 0.9; }
+.login-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.login-error { font-size: 12px; color: var(--red); margin-top: 10px; min-height: 18px; }
+
+/* ── APP ── */
+#app { display: none; height: 100vh; flex-direction: row; }
+#app.visible { display: flex; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: 380px; min-width: 380px;
+  background: var(--navy);
+  display: flex; flex-direction: column;
+  height: 100vh;
+  border-right: 1px solid var(--border);
+  position: relative; z-index: 10;
+}
+
+.sidebar-header { padding: 18px 22px 14px; border-bottom: 1px solid var(--border); }
+.sidebar-header .gold-bar { width: 24px; height: 2px; background: var(--gold); margin-bottom: 7px; border-radius: 1px; }
+.sidebar-header h1 { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; }
+.sidebar-header .sub { font-size: 10px; color: var(--gold); text-transform: uppercase; letter-spacing: 2.5px; margin-top: 2px; font-weight: 500; }
+
+/* Stats */
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); border-bottom: 1px solid var(--border); }
+.stat { padding: 11px 6px; text-align: center; border-right: 1px solid var(--border); }
+.stat:last-child { border-right: none; }
+.stat-num { font-family: 'Playfair Display', serif; font-size: 22px; font-weight: 700; line-height: 1; }
+.stat-num.gold { color: var(--gold); }
+.stat-num.green { color: var(--green); }
+.stat-num.blue { color: var(--blue); }
+.stat-num.gray { color: var(--gray); }
+.stat-lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--cream-dim); margin-top: 3px; font-weight: 500; }
+
+/* Tabs */
+.tab-bar { display: flex; border-bottom: 1px solid var(--border); }
+.tab-btn {
+  flex: 1; font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 1.5px; padding: 11px 6px;
+  background: none; border: none; color: var(--cream-dim); cursor: pointer;
+  transition: all 0.2s; border-bottom: 2px solid transparent;
+}
+.tab-btn:hover { color: var(--cream-soft); }
+.tab-btn.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+/* Filters */
+.filter-row {
+  padding: 9px 18px; display: flex; gap: 5px; flex-wrap: wrap;
+  border-bottom: 1px solid var(--border);
+}
+.f-btn {
+  font-family: 'DM Sans', sans-serif; font-size: 10px; font-weight: 600;
+  padding: 4px 11px; border-radius: 100px;
+  border: 1px solid rgba(255,255,255,0.07); background: transparent;
+  color: var(--cream-dim); cursor: pointer; transition: all 0.15s;
+  text-transform: uppercase; letter-spacing: 0.8px;
+}
+.f-btn:hover { border-color: var(--gold); color: var(--cream); }
+.f-btn.active { background: var(--gold); color: var(--navy); border-color: var(--gold); }
+
+/* List */
+.list-scroll { flex: 1; overflow-y: auto; padding: 4px 0; }
+.list-scroll::-webkit-scrollbar { width: 3px; }
+.list-scroll::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.2); border-radius: 3px; }
+
+.b-item {
+  padding: 11px 18px 11px 20px; cursor: pointer; transition: background 0.12s;
+  border-left: 3px solid transparent; display: flex; align-items: center; gap: 12px;
+}
+.b-item:hover { background: var(--gold-dim); }
+.b-item.active { background: var(--gold-soft); border-left-color: var(--gold); }
+
+.b-rank { font-family: 'Playfair Display', serif; font-size: 16px; font-weight: 700; color: rgba(201,168,76,0.25); width: 22px; text-align: right; flex-shrink: 0; }
+.b-info { flex: 1; min-width: 0; }
+.b-name { font-family: 'Playfair Display', serif; font-size: 15px; font-weight: 600; color: var(--cream); }
+.b-bars { display: flex; gap: 2px; margin-top: 5px; height: 4px; border-radius: 2px; overflow: hidden; background: rgba(255,255,255,0.03); }
+.b-bar-seg { height: 100%; border-radius: 2px; }
+.b-breakdown { display: flex; gap: 9px; margin-top: 4px; font-size: 10px; color: var(--cream-dim); }
+.b-breakdown span { display: flex; align-items: center; gap: 3px; }
+.dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.dot-a { background: var(--green); }
+.dot-e { background: var(--blue); }
+.dot-n { background: var(--gray); }
+.b-total { font-size: 14px; font-weight: 700; color: var(--gold); flex-shrink: 0; }
+
+/* Inst items */
+.inst-item {
+  padding: 11px 18px 11px 22px; cursor: pointer; transition: background 0.12s;
+  border-left: 3px solid transparent;
+}
+.inst-item:hover { background: rgba(167,139,250,0.06); }
+.inst-item.active { background: rgba(167,139,250,0.1); border-left-color: var(--purple); }
+.inst-name { font-family: 'Playfair Display', serif; font-size: 14px; font-weight: 600; color: var(--cream); }
+.inst-tipo { font-size: 10px; color: var(--purple); text-transform: uppercase; letter-spacing: 1px; margin-top: 2px; font-weight: 500; }
+.inst-meta { font-size: 11px; color: var(--cream-dim); margin-top: 3px; }
+
+/* Footer */
+.sidebar-footer { padding: 9px 18px; border-top: 1px solid var(--border); display: flex; gap: 12px; flex-wrap: wrap; align-items: center; justify-content: space-between; }
+.legend-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.legend-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--cream-dim); }
+.logout-btn { font-size: 10px; color: rgba(248,113,113,0.6); background: none; border: 1px solid rgba(248,113,113,0.2); border-radius: 4px; padding: 3px 8px; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s; }
+.logout-btn:hover { color: var(--red); border-color: var(--red); }
+
+/* ── DETAIL PANEL ── */
+.detail-panel {
+  position: fixed; top: 0; right: 0; width: 360px; height: 100vh;
+  background: var(--navy-mid); border-left: 1px solid var(--border);
+  z-index: 500; transform: translateX(100%); transition: transform 0.3s ease;
+  display: flex; flex-direction: column;
+  box-shadow: -8px 0 32px rgba(0,0,0,0.4);
+}
+.detail-panel.open { transform: translateX(0); }
+
+.detail-header {
+  padding: 18px 20px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: flex-start; gap: 12px;
+}
+.detail-header-info { flex: 1; min-width: 0; }
+.detail-title { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; color: var(--gold); }
+.detail-subtitle { font-size: 11px; color: var(--cream-dim); margin-top: 3px; }
+.detail-close {
+  background: none; border: 1px solid var(--border); color: var(--cream-dim);
+  width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-size: 14px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  transition: all 0.15s;
+}
+.detail-close:hover { border-color: var(--gold); color: var(--cream); }
+
+.detail-stats { display: grid; grid-template-columns: repeat(3, 1fr); border-bottom: 1px solid var(--border); }
+.d-stat { padding: 10px 8px; text-align: center; border-right: 1px solid var(--border); }
+.d-stat:last-child { border-right: none; }
+.d-stat-num { font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700; }
+.d-stat-lbl { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: var(--cream-dim); margin-top: 2px; font-weight: 500; }
+
+/* Contact list in detail */
+.detail-body { flex: 1; overflow-y: auto; padding: 8px 0; }
+.detail-body::-webkit-scrollbar { width: 3px; }
+.detail-body::-webkit-scrollbar-thumb { background: rgba(201,168,76,0.15); border-radius: 3px; }
+
+.detail-section-label {
+  padding: 10px 20px 4px;
+  font-size: 9px; text-transform: uppercase; letter-spacing: 2px;
+  font-weight: 700;
+}
+.detail-section-label.lbl-a { color: var(--green); }
+.detail-section-label.lbl-e { color: var(--blue); }
+.detail-section-label.lbl-n { color: var(--gray); }
+
+.contact-card {
+  padding: 10px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  transition: background 0.1s;
+}
+.contact-card:hover { background: rgba(255,255,255,0.02); }
+.contact-card:last-child { border-bottom: none; }
+
+.contact-name { font-size: 13px; font-weight: 600; color: var(--cream); }
+.contact-meta { font-size: 11px; color: var(--cream-dim); margin-top: 2px; display: flex; flex-direction: column; gap: 1px; }
+.contact-phone { color: var(--gold); font-weight: 500; }
+.contact-nicho { font-style: italic; color: rgba(201,168,76,0.5); font-size: 10px; }
+.contact-indicacao { color: var(--cream-dim); font-size: 10px; }
+.contact-notes { color: rgba(96,165,250,0.6); font-size: 10px; }
+
+/* ── MAP ── */
+.map-wrap { flex: 1; position: relative; }
+#map { height: 100%; width: 100%; }
+.leaflet-container { background: #080E18; }
+
+/* Popups */
+.custom-popup .leaflet-popup-content-wrapper {
+  background: var(--navy-mid); border: 1px solid rgba(201,168,76,0.2);
+  border-radius: 10px; color: var(--cream); box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+}
+.custom-popup .leaflet-popup-tip { background: var(--navy-mid); }
+.custom-popup .leaflet-popup-content { margin: 14px 16px; font-family: 'DM Sans', sans-serif; }
+.pop-title { font-family: 'Playfair Display', serif; font-size: 17px; font-weight: 700; color: var(--gold); margin-bottom: 8px; }
+.pop-hint { font-size: 11px; color: var(--cream-dim); font-style: italic; margin-top: 8px; }
+
+/* Network overlay */
+.net-panel {
+  position: absolute; top: 16px; right: 16px;
+  background: rgba(13,21,32,0.93); border: 1px solid rgba(201,168,76,0.15);
+  border-radius: 10px; padding: 14px 16px; z-index: 100; min-width: 250px;
+  backdrop-filter: blur(12px);
+}
+.net-panel h3 { font-family: 'Playfair Display', serif; font-size: 13px; color: var(--gold); margin-bottom: 9px; }
+.net-row { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
+.net-name { font-size: 11px; color: var(--cream-soft); width: 105px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
+.net-bar-bg { flex: 1; height: 4px; background: rgba(255,255,255,0.04); border-radius: 2px; overflow: hidden; }
+.net-bar-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--gold), #E8D48B); }
+.net-count { font-size: 11px; font-weight: 700; color: var(--gold); width: 22px; text-align: right; flex-shrink: 0; }
+
+/* Loading */
+.loading-overlay {
+  position: fixed; inset: 0; background: var(--navy); z-index: 9998;
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 14px;
+}
+.loading-overlay.hidden { display: none; }
+.loading-spinner {
+  width: 32px; height: 32px;
+  border: 2px solid var(--border);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 12px; color: var(--cream-dim); letter-spacing: 1px; }
+
+.unmapped-note { padding: 7px 18px; font-size: 10px; color: var(--cream-dim); border-top: 1px solid var(--border); text-align: center; font-style: italic; }
+
+@media (max-width: 960px) {
+  body { overflow: auto; }
+  #app { flex-direction: column; height: auto; }
+  .sidebar { width: 100%; min-width: 100%; height: auto; max-height: 45vh; }
+  .map-wrap { height: 55vh; }
+  .detail-panel { width: 100%; }
+  .net-panel { top: 8px; right: 8px; min-width: 200px; }
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="gold-bar"></div>
+    <h1>Mapa Político</h1>
+    <div class="sub">Rio de Janeiro</div>
+    <input type="password" class="login-input" id="password-input" placeholder="••••••••" autocomplete="current-password"/>
+    <button class="login-btn" id="login-btn">Entrar</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading-overlay hidden" id="loading-overlay">
+  <div class="loading-spinner"></div>
+  <div class="loading-text">Carregando dados…</div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="gold-bar"></div>
+      <h1>Mapa Político</h1>
+      <div class="sub">Município do Rio de Janeiro</div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat"><div class="stat-num gold" id="s-total">—</div><div class="stat-lbl">Total</div></div>
+      <div class="stat"><div class="stat-num green" id="s-ap">—</div><div class="stat-lbl">Apoiadores</div></div>
+      <div class="stat"><div class="stat-num blue" id="s-el">—</div><div class="stat-lbl">Eleitores</div></div>
+      <div class="stat"><div class="stat-num gray" id="s-ne">—</div><div class="stat-lbl">Neutros</div></div>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" data-tab="bairros">Bairros</button>
+      <button class="tab-btn" data-tab="instituicoes">Instituições</button>
+    </div>
+
+    <div class="filter-row" id="filter-row">
+      <button class="f-btn active" data-filter="all">Todos</button>
+      <button class="f-btn" data-filter="apoiador">Apoiadores</button>
+      <button class="f-btn" data-filter="eleitor">Eleitores</button>
+      <button class="f-btn" data-filter="neutro">Neutros</button>
+    </div>
+
+    <div class="list-scroll" id="list-scroll"></div>
+    <div class="unmapped-note" id="unmapped-note"></div>
+
+    <div class="sidebar-footer">
+      <div class="legend-row">
+        <div class="legend-item"><span class="dot dot-a"></span>Apoiador</div>
+        <div class="legend-item"><span class="dot dot-e"></span>Eleitor</div>
+        <div class="legend-item"><span class="dot dot-n"></span>Neutro</div>
+        <div class="legend-item"><span class="dot" style="background:var(--purple)"></span>Inst.</div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center;">
+        <button class="logout-btn" id="refresh-btn" title="Atualizar dados">↻</button>
+        <button class="logout-btn" id="logout-btn">Sair</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="map-wrap">
+    <div id="map"></div>
+    <div class="net-panel" id="net-panel">
+      <h3>Rede de Indicações</h3>
+      <div id="net-bars"></div>
+    </div>
+  </div>
+</div>
+
+<!-- DETAIL PANEL -->
+<div class="detail-panel" id="detail-panel">
+  <div class="detail-header">
+    <div class="detail-header-info">
+      <div class="detail-title" id="detail-title">—</div>
+      <div class="detail-subtitle" id="detail-subtitle">—</div>
+    </div>
+    <button class="detail-close" id="detail-close">✕</button>
+  </div>
+  <div class="detail-stats" id="detail-stats"></div>
+  <div class="detail-body" id="detail-body"></div>
+</div>
+
+<script>
+// ── STATE ──
+let TOKEN = sessionStorage.getItem('mapa_token') || '';
+let DATA = null;
+let activeTab = 'bairros';
+let activeFilter = 'all';
+let mapMarkers = [];
+let instMarkers = [];
+let map = null;
+
+// ── LOGIN ──
+const loginScreen = document.getElementById('login-screen');
+const app = document.getElementById('app');
+const loadingOverlay = document.getElementById('loading-overlay');
+
+document.getElementById('password-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+document.getElementById('login-btn').addEventListener('click', doLogin);
+
+async function doLogin() {
+  const pw = document.getElementById('password-input').value.trim();
+  const btn = document.getElementById('login-btn');
+  const errEl = document.getElementById('login-error');
+  const input = document.getElementById('password-input');
+
+  if (!pw) return;
+  btn.disabled = true;
+  btn.textContent = 'Verificando…';
+  errEl.textContent = '';
+
+  try {
+    const res = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: pw })
+    });
+    const json = await res.json();
+    if (res.ok) {
+      TOKEN = json.token;
+      sessionStorage.setItem('mapa_token', TOKEN);
+      input.classList.remove('error');
+      loginScreen.style.display = 'none';
+      await loadApp();
+    } else {
+      input.classList.add('error');
+      errEl.textContent = 'Senha incorreta';
+      btn.disabled = false;
+      btn.textContent = 'Entrar';
+    }
+  } catch (e) {
+    errEl.textContent = 'Erro de conexão';
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+  }
+}
+
+document.getElementById('logout-btn').addEventListener('click', () => {
+  sessionStorage.removeItem('mapa_token');
+  location.reload();
+});
+
+document.getElementById('refresh-btn').addEventListener('click', async () => {
+  const btn = document.getElementById('refresh-btn');
+  btn.disabled = true;
+  btn.textContent = '...';
+  // Force cache bypass on server by adding timestamp
+  try {
+    const res = await fetch('/api/data?_t=' + Date.now(), { headers: { 'x-auth-token': TOKEN } });
+    if (res.ok) {
+      DATA = await res.json();
+      render();
+    }
+  } catch (e) {}
+  btn.disabled = false;
+  btn.textContent = '↻';
+});
+
+// ── LOAD APP ──
+async function loadApp() {
+  loadingOverlay.classList.remove('hidden');
+  try {
+    const res = await fetch('/api/data', { headers: { 'x-auth-token': TOKEN } });
+    if (res.status === 401) { sessionStorage.removeItem('mapa_token'); location.reload(); return; }
+    DATA = await res.json();
+    loadingOverlay.classList.add('hidden');
+    app.classList.add('visible');
+    initMap();
+    render();
+  } catch (e) {
+    loadingOverlay.classList.add('hidden');
+    alert('Erro ao carregar dados. Recarregue a página.');
+  }
+}
+
+// Auto-login if token stored
+if (TOKEN) {
+  loginScreen.style.display = 'none';
+  loadApp();
+}
+
+// ── MAP INIT ──
+function initMap() {
+  map = L.map('map', { zoomControl: false, attributionControl: false }).setView([-22.955, -43.195], 13);
+  L.control.zoom({ position: 'bottomright' }).addTo(map);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', { maxZoom: 19 }).addTo(map);
+}
+
+// ── HELPERS ──
+function filteredList(d, f) {
+  if (f === 'apoiador') return d.apoiadores;
+  if (f === 'eleitor') return d.eleitores;
+  if (f === 'neutro') return d.neutros;
+  return [...d.apoiadores, ...d.eleitores, ...d.neutros];
+}
+function filteredCount(d, f) { return filteredList(d, f).length; }
+function markerRadius(n) { return Math.max(10, Math.min(44, 6 + n * 2)); }
+
+function dominantColor(d) {
+  if (d.apoiadores.length >= d.eleitores.length && d.apoiadores.length >= d.neutros.length) return '#4ADE80';
+  if (d.eleitores.length >= d.neutros.length) return '#60A5FA';
+  return '#94A3B8';
+}
+
+// ── RENDER MAP BAIRROS ──
+function renderMapBairros() {
+  mapMarkers.forEach(m => map.removeLayer(m));
+  mapMarkers = [];
+  if (!DATA) return;
+
+  const colorByFilter = { all: null, apoiador: '#4ADE80', eleitor: '#60A5FA', neutro: '#94A3B8' };
+
+  DATA.bairros.forEach(d => {
+    const count = filteredCount(d, activeFilter);
+    if (count === 0) return;
+
+    const c = activeFilter === 'all' ? dominantColor(d) : colorByFilter[activeFilter];
+    const r = markerRadius(count);
+
+    const circle = L.circleMarker([d.lat, d.lng], {
+      radius: r, fillColor: c, color: c,
+      weight: 1.5, opacity: 0.85, fillOpacity: 0.18
+    }).addTo(map);
+
+    const ring = L.circleMarker([d.lat, d.lng], {
+      radius: r + 5, fillColor: 'transparent', color: c,
+      weight: 0.5, opacity: 0.15, fillOpacity: 0
+    }).addTo(map);
+
+    const label = L.marker([d.lat, d.lng], {
+      icon: L.divIcon({
+        className: '',
+        html: `<div style="font-family:'DM Sans';font-size:11px;font-weight:700;color:#fff;text-shadow:0 1px 5px rgba(0,0,0,0.9);pointer-events:none;transform:translate(-50%,-50%);white-space:nowrap;">${count}</div>`,
+        iconSize: [0, 0]
+      })
+    }).addTo(map);
+
+    // Popup — light summary, full info in panel
+    const popHtml = `
+      <div class="pop-title">${d.bairro}</div>
+      <div style="font-size:12px;color:rgba(240,237,230,0.7);">
+        <span style="color:#4ADE80;font-weight:600;">${d.apoiadores.length}</span> apoiadores &nbsp;·&nbsp;
+        <span style="color:#60A5FA;font-weight:600;">${d.eleitores.length}</span> eleitores &nbsp;·&nbsp;
+        <span style="color:#94A3B8;font-weight:600;">${d.neutros.length}</span> neutros
+      </div>
+      <div class="pop-hint">Clique para ver lista completa →</div>
+    `;
+
+    circle.bindPopup(popHtml, { className: 'custom-popup', maxWidth: 260 });
+    circle.on('click', () => {
+      openDetailPanel(d);
+      highlightSidebar(d.bairro);
+    });
+
+    mapMarkers.push(circle, ring, label);
+  });
+}
+
+// ── RENDER MAP INSTITUTIONS ──
+function renderMapInstitutions() {
+  instMarkers.forEach(m => map.removeLayer(m));
+  instMarkers = [];
+  if (!DATA) return;
+
+  DATA.institutions.forEach(inst => {
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="width:26px;height:26px;background:rgba(167,139,250,0.18);border:2px solid #A78BFA;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:12px;box-shadow:0 2px 10px rgba(167,139,250,0.25);">◆</div>`,
+      iconSize: [26, 26], iconAnchor: [13, 13]
+    });
+    const marker = L.marker([inst.lat, inst.lng], { icon }).addTo(map);
+    const pop = `<div class="pop-title">${inst.nome}</div>
+      <div style="font-size:10px;color:#A78BFA;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;">${inst.tipo}</div>
+      <div style="font-size:12px;color:rgba(240,237,230,0.6);">${inst.bairro}</div>
+      <div style="font-size:11px;color:rgba(201,168,76,0.7);margin-top:4px;">${inst.conexao}</div>`;
+    marker.bindPopup(pop, { className: 'custom-popup', maxWidth: 260 });
+    marker.on('click', () => highlightSidebar(inst.nome));
+    instMarkers.push(marker);
+  });
+}
+
+// ── DETAIL PANEL ──
+function openDetailPanel(d) {
+  document.getElementById('detail-title').textContent = d.bairro;
+  document.getElementById('detail-subtitle').textContent = `${d.total} contatos mapeados`;
+
+  document.getElementById('detail-stats').innerHTML = `
+    <div class="d-stat"><div class="d-stat-num" style="color:var(--green)">${d.apoiadores.length}</div><div class="d-stat-lbl">Apoiadores</div></div>
+    <div class="d-stat"><div class="d-stat-num" style="color:var(--blue)">${d.eleitores.length}</div><div class="d-stat-lbl">Eleitores</div></div>
+    <div class="d-stat"><div class="d-stat-num" style="color:var(--gray)">${d.neutros.length}</div><div class="d-stat-lbl">Neutros</div></div>
+  `;
+
+  const body = document.getElementById('detail-body');
+  body.innerHTML = '';
+
+  function renderGroup(list, label, cls, color) {
+    if (!list.length) return;
+    const lbl = document.createElement('div');
+    lbl.className = `detail-section-label ${cls}`;
+    lbl.textContent = `${label} (${list.length})`;
+    body.appendChild(lbl);
+
+    // Deduplicate by name
+    const seen = new Set();
+    list.forEach(p => {
+      if (seen.has(p.nome)) return;
+      seen.add(p.nome);
+      const card = document.createElement('div');
+      card.className = 'contact-card';
+      let meta = '';
+      if (p.telefone) meta += `<span class="contact-phone">📞 ${p.telefone}</span>`;
+      if (p.endereco) meta += `<span>📍 ${p.endereco}</span>`;
+      if (p.nicho) meta += `<span class="contact-nicho">${p.nicho}</span>`;
+      if (p.indicacao) meta += `<span class="contact-indicacao">↳ via ${p.indicacao}</span>`;
+      if (p.rascunho) meta += `<span class="contact-notes">💬 ${p.rascunho}</span>`;
+      card.innerHTML = `<div class="contact-name">${p.nome}</div><div class="contact-meta">${meta}</div>`;
+      body.appendChild(card);
+    });
+  }
+
+  renderGroup(d.apoiadores, 'Apoiadores', 'lbl-a', 'var(--green)');
+  renderGroup(d.eleitores, 'Eleitores', 'lbl-e', 'var(--blue)');
+  renderGroup(d.neutros, 'Neutros', 'lbl-n', 'var(--gray)');
+
+  document.getElementById('detail-panel').classList.add('open');
+}
+
+document.getElementById('detail-close').addEventListener('click', () => {
+  document.getElementById('detail-panel').classList.remove('open');
+  document.querySelectorAll('.b-item, .inst-item').forEach(el => el.classList.remove('active'));
+});
+
+// ── SIDEBAR LIST ──
+function renderBairroList() {
+  if (!DATA) return;
+  const list = document.getElementById('list-scroll');
+  list.innerHTML = '';
+
+  const filtered = DATA.bairros
+    .filter(d => filteredCount(d, activeFilter) > 0)
+    .sort((a, b) => filteredCount(b, activeFilter) - filteredCount(a, activeFilter));
+
+  const maxT = filtered.length ? filtered[0].total : 1;
+
+  filtered.forEach((d, i) => {
+    const count = filteredCount(d, activeFilter);
+    const el = document.createElement('div');
+    el.className = 'b-item';
+    el.dataset.id = d.bairro;
+
+    const aPct = (d.apoiadores.length / maxT * 100).toFixed(1);
+    const ePct = (d.eleitores.length / maxT * 100).toFixed(1);
+    const nPct = (d.neutros.length / maxT * 100).toFixed(1);
+
+    let breakdown = '';
+    if (activeFilter === 'all') {
+      if (d.apoiadores.length) breakdown += `<span><span class="dot dot-a"></span>${d.apoiadores.length}</span>`;
+      if (d.eleitores.length) breakdown += `<span><span class="dot dot-e"></span>${d.eleitores.length}</span>`;
+      if (d.neutros.length) breakdown += `<span><span class="dot dot-n"></span>${d.neutros.length}</span>`;
+    }
+
+    el.innerHTML = `
+      <div class="b-rank">${i + 1}</div>
+      <div class="b-info">
+        <div class="b-name">${d.bairro}</div>
+        <div class="b-bars">
+          <div class="b-bar-seg" style="width:${aPct}%;background:var(--green)"></div>
+          <div class="b-bar-seg" style="width:${ePct}%;background:var(--blue)"></div>
+          <div class="b-bar-seg" style="width:${nPct}%;background:var(--gray)"></div>
+        </div>
+        ${breakdown ? `<div class="b-breakdown">${breakdown}</div>` : ''}
+      </div>
+      <div class="b-total">${count}</div>
+    `;
+
+    el.addEventListener('click', () => {
+      map.setView([d.lat, d.lng], 15);
+      openDetailPanel(d);
+      highlightSidebar(d.bairro);
+    });
+    list.appendChild(el);
+  });
+
+  // Stats
+  const totA = DATA.bairros.reduce((s, d) => s + d.apoiadores.length, 0);
+  const totE = DATA.bairros.reduce((s, d) => s + d.eleitores.length, 0);
+  const totN = DATA.bairros.reduce((s, d) => s + d.neutros.length, 0);
+  document.getElementById('s-total').textContent = totA + totE + totN;
+  document.getElementById('s-ap').textContent = totA;
+  document.getElementById('s-el').textContent = totE;
+  document.getElementById('s-ne').textContent = totN;
+
+  document.getElementById('unmapped-note').textContent =
+    DATA.unmapped ? `${DATA.unmapped} contatos sem bairro não aparecem no mapa` : '';
+}
+
+function renderInstList() {
+  if (!DATA) return;
+  const list = document.getElementById('list-scroll');
+  list.innerHTML = '';
+  DATA.institutions.forEach(inst => {
+    const el = document.createElement('div');
+    el.className = 'inst-item';
+    el.dataset.id = inst.nome;
+    el.innerHTML = `
+      <div class="inst-name">${inst.nome}</div>
+      <div class="inst-tipo">${inst.tipo}</div>
+      <div class="inst-meta">${inst.bairro} · ${inst.conexao}</div>
+    `;
+    el.addEventListener('click', () => {
+      map.setView([inst.lat, inst.lng], 16);
+      highlightSidebar(inst.nome);
+    });
+    list.appendChild(el);
+  });
+  document.getElementById('unmapped-note').textContent = '';
+}
+
+function highlightSidebar(id) {
+  document.querySelectorAll('.b-item, .inst-item').forEach(el => {
+    el.classList.toggle('active', el.dataset.id === id);
+  });
+}
+
+// ── NETWORK ──
+function renderNetwork() {
+  if (!DATA) return;
+  const maxC = DATA.network[0]?.count || 1;
+  document.getElementById('net-bars').innerHTML = DATA.network.map(n => `
+    <div class="net-row">
+      <div class="net-name">${n.name}</div>
+      <div class="net-bar-bg"><div class="net-bar-fill" style="width:${(n.count / maxC * 100)}%"></div></div>
+      <div class="net-count">${n.count}</div>
+    </div>
+  `).join('');
+}
+
+// ── TABS + FILTERS ──
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeTab = btn.dataset.tab;
+    document.getElementById('detail-panel').classList.remove('open');
+
+    if (activeTab === 'instituicoes') {
+      document.getElementById('filter-row').style.display = 'none';
+      renderInstList();
+      renderMapInstitutions();
+    } else {
+      document.getElementById('filter-row').style.display = 'flex';
+      renderBairroList();
+      instMarkers.forEach(m => map.removeLayer(m));
+      instMarkers = [];
+      renderMapBairros();
+    }
+  });
+});
+
+document.querySelectorAll('.f-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.f-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter = btn.dataset.filter;
+    renderMapBairros();
+    renderBairroList();
+  });
+});
+
+function render() {
+  renderMapBairros();
+  renderBairroList();
+  renderNetwork();
+}
+</script>
+</body>
+</html>
