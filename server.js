@@ -68,15 +68,78 @@ const BAIRRO_COORDS = {
 };
 
 const INSTITUTIONS = [
-  { nome: "Casa Comadre", tipo: "Espaço Cultural", bairro: "Humaitá", lat: -22.9555, lng: -43.1965, conexao: "Gabriela Davies, Marcella Klimuk, Maíra Marques" },
-  { nome: "Casa Amarela", tipo: "Espaço Cultural", bairro: "Centro", lat: -22.9055, lng: -43.1750, conexao: "Ju Dutra" },
-  { nome: "Alfa Bar", tipo: "Bar / Ponto de encontro", bairro: "Laranjeiras", lat: -22.9345, lng: -43.1865, conexao: "Evelyn Chaves" },
-  { nome: "CEBRI", tipo: "Think Tank", bairro: "Botafogo", lat: -22.9510, lng: -43.1830, conexao: "Susanne Wehrs" },
-  { nome: "ABL", tipo: "Instituição Cultural", bairro: "Centro", lat: -22.9100, lng: -43.1710, conexao: "Isabel Werneck" },
-  { nome: "SENAI", tipo: "Ensino Profissional", bairro: "Centro", lat: -22.9080, lng: -43.1780, conexao: "Amanda Mendonça" },
-  { nome: "Livraria Janela", tipo: "Livraria", bairro: "Humaitá", lat: -22.9530, lng: -43.1930, conexao: "Martha Ribas" },
-  { nome: "Colégio Santo Inácio", tipo: "Escola", bairro: "Botafogo", lat: -22.9530, lng: -43.1880, conexao: "André Boudon" },
-  { nome: "UFRRJ", tipo: "Universidade", bairro: "Seropédica", lat: -22.7680, lng: -43.6850, conexao: "André Boudon" },
+  {
+    nome: "Casa Comadre",
+    tipo: "Espaço Cultural",
+    bairro: "Humaitá",
+    endereco: "Rua Humaitá, Humaitá — Rio de Janeiro, RJ",
+    lat: -22.9555, lng: -43.1965,
+    conexao: "Gabriela Davies, Marcella Klimuk, Maíra Marques"
+  },
+  {
+    nome: "Casa Amarela",
+    tipo: "Espaço Cultural",
+    bairro: "Centro",
+    endereco: "Largo de São Francisco de Paula, Centro — Rio de Janeiro, RJ",
+    lat: -22.9090, lng: -43.1780,
+    conexao: "Ju Dutra"
+  },
+  {
+    nome: "Alfa Bar",
+    tipo: "Bar / Ponto de encontro",
+    bairro: "Laranjeiras",
+    endereco: "Rua General Glicério, Laranjeiras — Rio de Janeiro, RJ",
+    lat: -22.9355, lng: -43.1860,
+    conexao: "Evelyn Chaves"
+  },
+  {
+    nome: "CEBRI",
+    tipo: "Think Tank — Relações Internacionais",
+    bairro: "Gávea",
+    endereco: "Rua Marquês de São Vicente, 336 — Gávea, Rio de Janeiro, RJ",
+    lat: -22.9763, lng: -43.2268,
+    conexao: "Susanne Wehrs"
+  },
+  {
+    nome: "ABL — Academia Brasileira de Letras",
+    tipo: "Instituição Cultural",
+    bairro: "Centro",
+    endereco: "Av. Presidente Wilson, 203 — Centro, Rio de Janeiro, RJ",
+    lat: -22.9095, lng: -43.1755,
+    conexao: "Isabel Werneck"
+  },
+  {
+    nome: "Livraria Janela — Jardim Botânico",
+    tipo: "Livraria",
+    bairro: "Jardim Botânico",
+    endereco: "Rua Maria Angélica, 171 loja B — Jardim Botânico, Rio de Janeiro, RJ",
+    lat: -22.9640, lng: -43.2180,
+    conexao: "Martha Ribas"
+  },
+  {
+    nome: "Livraria Janela — Laranjeiras",
+    tipo: "Livraria",
+    bairro: "Laranjeiras",
+    endereco: "Rua Professor Ortiz Monteiro, 15 loja A — Laranjeiras, Rio de Janeiro, RJ",
+    lat: -22.9372, lng: -43.1855,
+    conexao: "Martha Ribas"
+  },
+  {
+    nome: "Colégio Santo Inácio",
+    tipo: "Escola",
+    bairro: "Botafogo",
+    endereco: "Rua São Clemente, 226 — Botafogo, Rio de Janeiro, RJ",
+    lat: -22.9517, lng: -43.1898,
+    conexao: "André Boudon"
+  },
+  {
+    nome: "UFRRJ",
+    tipo: "Universidade Federal",
+    bairro: "Seropédica",
+    endereco: "BR-465, km 7 — Seropédica, Rio de Janeiro, RJ",
+    lat: -22.7680, lng: -43.6850,
+    conexao: "André Boudon"
+  },
 ];
 
 // ── HEALTH ROUTE (para Railway) ──
